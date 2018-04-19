@@ -1,0 +1,15 @@
+import getdist.plots as gplot
+import os
+import matplotlib.pyplot as plt
+
+
+g=gplot.getSubplotPlotter(chain_dir=r'/home/francesca/Desktop/CAMB-EFTCAMB/CosmoMC-master/PLA/chains_planck/base/WMAP')
+roots = ['base_WMAP']
+xparams = [u'sigma8z057']
+yparams = [u'chi2_WMAP']
+plt.plot(xparams,yparams)
+plt.show()
+
+#filled=True
+#g.rectangle_plot(xparams, yparams, roots=roots,filled=filled)
+#g.export()

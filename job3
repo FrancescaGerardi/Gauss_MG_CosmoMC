@@ -1,0 +1,18 @@
+#!/bin/env bash
+##comment out lines by adding at least two `#' at the beginning
+#SBATCH --job-name=4bin_corr_var_prova2
+#SBATCH --account=silvestri
+#SBATCH --partition=computation
+#SBATCH --output=/home/gerardi/%x.out
+#SBATCH --error=/home/gerardi/%x.err
+#SBATCH --time=100-00:00:00
+#SBATCH --mem=10000
+#SBATCH --ntasks=8
+# mail alert at start, end and abortion of execution
+#SBATCH --mail-type=FAIL
+# send mail to this address
+#SBATCH --mail-user=gerardi@lorentz.leidenuniv.nl
+
+cd /home/gerardi/Gauss_MG_CosmoMC
+
+mpirun -verbose -np 8 ./cosmomc test.ini > chains/chain_run_1.log

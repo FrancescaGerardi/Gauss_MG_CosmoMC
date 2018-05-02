@@ -158,11 +158,11 @@
 		   
 		   else if ((CP%model.eq.GP).or.(CP%model.eq.baseline)) then
       			   !gaussian process
-       
-			  if (z.lt.CP%endred) then
+                          
+			  if (z.le.GP_z(size(GP_z))) then
 		              call cubicsplint(GP_z,GP_w,dd_GP_w,nsteps,z,w_de)
          		  else
-            			w_de=0._dl
+            			w_de=GP_w(size(GP_z))
                           end if
                
                    else
@@ -170,7 +170,7 @@
                    end if
 
                   !SP: debugging
-                   if (z>final_z) w_de= 0._dl
+                  ! if (z>final_z) w_de= 0._dl
     end if
 
 
@@ -316,14 +316,14 @@
 
  is_cosmological_constant = .not. use_tabulated_w .and. w_lam==-1_dl .and. wa_ppf==0._dl
 
-      final_z = CP%endred
+      final_z   = CP%endred
       nsteps    = CP%numstepsODE
 
 
       !allocating arrays
-      if (allocated(GP_z) .eqv. .false.) allocate (GP_z(nsteps+1))
-      if (allocated(GP_w) .eqv. .false.) allocate (GP_w(nsteps+1))
-      if (allocated(dd_GP_w) .eqv. .false.) allocate (dd_GP_w(nsteps+1))
+      if (allocated(GP_z) .eqv. .false.) allocate (GP_z(nsteps))
+      if (allocated(GP_w) .eqv. .false.) allocate (GP_w(nsteps))
+      if (allocated(dd_GP_w) .eqv. .false.) allocate (dd_GP_w(nsteps))
 
       nlbins=(CP%nb)-1
 
@@ -416,8 +416,8 @@
      end if
 
 
-	write(*,*) 'ciao'
 	if (printw) then
+                write(*,*) 'ciao'
 		open(40,file='printwde.dat')
 		do m=1,101
 			redshift=(m-1)*2._dl/100

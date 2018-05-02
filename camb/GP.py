@@ -44,7 +44,7 @@ endred = args.endred[0]
 ODEsteps = args.ODEsteps[0]
 #z_edge = np.array(args.redshifts) #NH redshift at edge of each bin
 wde = np.array(args.eos)
-lc = args.l[0]  #correlation lenght costante
+#lc = args.l[0]  #correlation lenght costante
 l = np.array(args.lb)
 filename = args.outfile[0]
 
@@ -109,8 +109,8 @@ for i in range (0,n):
 print red_sampl
 	
 #plotting
-plt.plot(red_sampl,wde_pr,'.')
-plt.show()
+#plt.plot(red_sampl,wde_pr,'.')
+#plt.show()
 #save file
 np.savetxt(filename, np.array([red_sampl, wde_pr]).T, fmt="%15.8e")
 

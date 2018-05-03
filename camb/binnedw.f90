@@ -18,11 +18,20 @@ use ModelParams
 
       contains
 
-      subroutine get_wofz(CP, z, wde)
+      subroutine get_wofz(CP, a, wde)
       Type(CAMBparams) CP
-      real(dl), intent(in)  :: z
+      real(dl), intent(in)  :: a
+      real(dl)              :: z
       real(dl), intent(out) :: wde
       integer               :: i,j,k
+
+      real(dl), parameter   :: eps=1.e-12 !avoids 1/0
+
+      if (a.gt.0._dl) then
+         z = -1+1._dl/a
+      else
+         z = -1+1._dl/(a+eps)
+      end if
 
       if (CP%model.eq.theta_bin) then
          if (z.gt.CP%zb(CP%nb)) then
@@ -89,11 +98,17 @@ use ModelParams
 
       end subroutine get_integral_rhode
 
-      subroutine get_rhode(z,rhode)
-      real(dl), intent(in)  :: z
+      subroutine get_rhode(a,rhode)
+      real(dl), intent(in)  :: a
       real(dl), intent(out) :: rhode
-      real(dl)              :: lastw
+      real(dl)              :: z,lastw
+      real(dl), parameter   :: eps=1.e-12 !avoids 1/0
 
+      if (a.gt.0._dl) then
+         z = -1+1._dl/a
+      else
+         z = -1+1._dl/(a+eps)
+      end if
       if (z.le.binned_z(nsteps)) then
          rhode = ispline(z, binned_z, rhodeint, b2, c2, d2, nsteps)
       else
@@ -215,16 +230,14 @@ use ModelParams
          end if
          !-----------------------------------------------------------
 
+         !Setting interpolation for GP arrays------------------------
+         call newspline(binned_z,binned_w, b1, c1, d1, nsteps)
+         !-----------------------------------------------------------
+
      else if (CP%model.gt.3) then
          write(*,*) "THIS MODEL DOESN'T EXIST!!!!"
          stop
      end if
-
-     write(0,*) 'size=',size(binned_w)
-     write(0,*) 'num=',nsteps
-     !Setting interpolation for GP arrays------------------------
-     call newspline(binned_z,binned_w, b1, c1, d1, nsteps)
-     !-----------------------------------------------------------
 
      write(*,*) 'w(z) computed'
 
@@ -238,8 +251,8 @@ use ModelParams
          open(42,file='printomega.dat')
          do m=1,101
             redshift=(m-1)*2._dl/100
-            call get_wofz(CP,redshift, wdetest)
-            call get_rhode(redshift, rhodetest)
+            call get_wofz(CP,1/(1+redshift), wdetest)
+            call get_rhode(1/(1+redshift), rhodetest)
             omegam = ((3*(1000*CP%H0/c)**2.*(1-CP%omegav)*(1+redshift)**3._dl)/(rhodetest+3*(1000*CP%H0/c)**2.*(1-CP%omegav)*(1+redshift)**3._dl))
             omegade = (rhodetest/(rhodetest+3*(1000*CP%H0/c)**2.*(1-CP%omegav)*(1+redshift)**3._dl))
             write(40,*) redshift, wdetest

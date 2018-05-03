@@ -103,7 +103,7 @@
 
     cpl=.false.  !se usare o meno cpl parametrization
   
-    z= (1/a) -1
+    !z= (1/a) -1
     !MMmod: binned w
     if (CP%model.eq.0) then 
        if(.not. use_tabulated_w) then
@@ -119,7 +119,7 @@
            endif
        endif
     else
-       call get_wofz(CP, z, w_de)
+       call get_wofz(CP, a, w_de)
     end if
     end function w_de  ! equation of state of the PPF DE
 
@@ -173,7 +173,7 @@
            endif
        endif
     else
-       call get_rhode(-1+1/a,grho_de)
+       call get_rhode(a,grho_de)
        grho_de = grho_de*a**4._dl
     end if
     end function grho_de

@@ -23,7 +23,6 @@
     use precision
     use  ModelParams    !dentro modelparams c'è gia CAMBparams come CP
 
-
     implicit none
 
 
@@ -43,22 +42,6 @@
     real(dl) rde(nde),ade(nde),ddrde(nde)
     real(dl), parameter :: amin = 1.d-9
     logical :: is_cosmological_constant
-
-
-    real(dl), dimension(:),allocatable :: GP_z, GP_w, dd_GP_w         !output arrays of GP reconstruction
-	real    :: multitheta !double theta function for binning
-	integer  :: k
-	real :: ns=1, ss=2, GP=3, baseline=4
-
-	logical  :: debugging = .false.  
-   
-
-      !initializing global ODE solver parameters from CAMB
-      real :: initial_z = 0._dl
-      real :: final_z 
-      integer :: nsteps
-
-
 
     private nde,ddw_ppf,rde,ade,ddrde,amin
 
@@ -111,7 +94,7 @@
 
 
     function w_de(a)
-
+    use binnedw !MMmod: binned w
     real(dl) :: w_de, al, z
     real(dl), intent(IN) :: a
     logical :: cpl
@@ -121,69 +104,23 @@
     cpl=.false.  !se usare o meno cpl parametrization
   
     z= (1/a) -1
-    
-    if(.not. use_tabulated_w) then
-	if (cpl) then
-        	w_de=w_lam+wa_ppf*(1._dl-a)
-	else
-
-	           if (CP%model.eq.ns) then  
-		         if (z.gt.CP%zb(CP%nb)) then
-	         	 	w_de = CP%wb(CP%nb)
-	         	 else
-	            		w_de = CP%wb(1)
-	         		do i=1,CP%nb-1
-	               			multitheta = (sign(1d0,(z-CP%zb(i)))+1)/2 - (sign(1d0,(z-CP%zb(i+1)))+1)/2
-	               			w_de = w_de + (CP%wb(i+1)-CP%wb(1))*multitheta
-	            			end do
-          
-	         	 end if
-
-	           else if (CP%model.eq.ss) then
-       			  !Working with binned qV smoothed with tanh.
-
-       			  if (z.gt.CP%zb(CP%nb)) then
-	         	 	w_de = CP%wb(CP%nb)
-         		  else
-            			w_de = CP%wb(1)
-            			do i=1,CP%nb-1
-               				if (i.eq.1) then
-               					w_de = w_de + (CP%wb(i+1)-CP%wb(i))/2 * (1+tanh( CP%s*(z-CP%zb(i))/((CP%zb(i))/2)  ) )
-              				else
-                  				w_de = w_de + (CP%wb(i+1)-CP%wb(i))/2 * (1+tanh( CP%s*(z-CP%zb(i))/((CP%zb(i)-CP%zb(i-1))/2)  ) )
-               				end if
-            			end do
-           
-         		   end if
-		   
-		   else if ((CP%model.eq.GP).or.(CP%model.eq.baseline)) then
-      			   !gaussian process
-                          
-			  if (z.le.GP_z(size(GP_z))) then
-		              call cubicsplint(GP_z,GP_w,dd_GP_w,nsteps,z,w_de)
-         		  else
-            			w_de=GP_w(size(GP_z))
-                          end if
-               
-                   else
-                          write(*,*) 'wait for it'
-                   end if
-
-                  !SP: debugging
-                  ! if (z>final_z) w_de= 0._dl
-    end if
-
-
+    !MMmod: binned w
+    if (CP%model.eq.0) then 
+       if(.not. use_tabulated_w) then
+           w_de=w_lam+wa_ppf*(1._dl-a)
+       else
+           al=dlog(a)
+           if(al.lt.a_ppf(1)) then
+               w_de=w_ppf(1)                   !if a < minimum a from wa.dat
+           elseif(al.gt.a_ppf(nw_ppf)) then
+               w_de=w_ppf(nw_ppf)              !if a > maximus a from wa.dat
+           else
+               call cubicsplint(a_ppf,w_ppf,ddw_ppf,nw_ppf,al,w_de)
+           endif
+       endif
     else
-        al=dlog(a)
-        if(al.lt.a_ppf(1)) then
-            w_de=w_ppf(1)                   !if a < minimum a from wa.dat
-        elseif(al.gt.a_ppf(nw_ppf)) then
-            w_de=w_ppf(nw_ppf)              !if a > maximus a from wa.dat
-        else
-            call cubicsplint(a_ppf,w_ppf,ddw_ppf,nw_ppf,al,w_de)
-        endif
-    endif
+       call get_wofz(CP, z, w_de)
+    end if
     end function w_de  ! equation of state of the PPF DE
 
 
@@ -214,24 +151,31 @@
     end subroutine interpolrde
 
     function grho_de(a)  !8 pi G a^4 rho_de
+    use binnedw !MMmod: binned w
     real(dl) :: grho_de, al, fint
     real(dl), intent(IN) :: a
 
-    if(.not. use_tabulated_w) then
-        grho_de=grhov*a**(1._dl-3.*w_lam-3.*wa_ppf)*exp(-3.*wa_ppf*(1._dl-a))
+    !MMmod: binned w
+    if (CP%model.eq.0) then
+       if(.not. use_tabulated_w) then
+           grho_de=grhov*a**(1._dl-3.*w_lam-3.*wa_ppf)*exp(-3.*wa_ppf*(1._dl-a))
+       else
+           if(a.eq.0.d0)then
+               grho_de=0.d0      !assume rho_de*a^4-->0, when a-->0, OK if w_de always <0.
+           else
+               al=dlog(a)
+               if(al.lt.ade(1))then
+                   fint=rde(1)*(a/amin)**(1.-3.*w_de(amin))    !if a<amin, assume here w=w_de(amin)
+               else              !if amin is small enough, this extrapolation will be unnecessary.
+                   call cubicsplint(ade,rde,ddrde,nde,al,fint)
+               endif
+               grho_de=grhov*fint
+           endif
+       endif
     else
-        if(a.eq.0.d0)then
-            grho_de=0.d0      !assume rho_de*a^4-->0, when a-->0, OK if w_de always <0.
-        else
-            al=dlog(a)
-            if(al.lt.ade(1))then
-                fint=rde(1)*(a/amin)**(1.-3.*w_de(amin))    !if a<amin, assume here w=w_de(amin)
-            else              !if amin is small enough, this extrapolation will be unnecessary.
-                call cubicsplint(ade,rde,ddrde,nde,al,fint)
-            endif
-            grho_de=grhov*fint
-        endif
-    endif
+       call get_rhode(-1+1/a,grho_de)
+       grho_de = grho_de*a**4._dl
+    end if
     end function grho_de
 
     !-------------------------------------------------------------------
@@ -285,153 +229,31 @@
 
     subroutine init_background  
     use LambdaGeneral
+    use binnedw !MMmod: w_binned
     !This is only called once per model, and is a good point to do any extra initialization.
     !It is called before first call to dtauda, but after
     !massive neutrinos are initialized and after GetOmegak
+    real(dl) red
 
+    is_cosmological_constant = .not. use_tabulated_w .and. w_lam==-1_dl .and. wa_ppf==0._dl
 
-!    Type(CAMBparams) CP
+    !MMmod: w_binned
+    if (CP%model.gt.0) call calc_w_de(CP) 
 
-    integer :: i,m,nlbins
-    real(dl) :: redshift
-    logical :: printw=.true.
-
- 
-       
-
-      !Interface with GP python script
-      character(LEN= 1000)                :: zbins
-      character(LEN= 1000)                :: wbins
-      character(LEN= 1000)                :: steps_de
-      character(LEN= 1000)                :: z_ini
-      character(LEN= 1000)                :: z_end
-!      character(LEN= 1000)                :: lencorr ! se si usa quella costante
-      character(LEN= 1000)                :: lbins
-      character(LEN= 20)                  :: feature_file="tmp_GPqz_000000.dat"
-      character(LEN=10000)                :: command_plus_arguments
-      real(dl), dimension(CP%nb) :: gpreds
-      integer :: status
-      integer :: getpid
-      integer :: system
-
- is_cosmological_constant = .not. use_tabulated_w .and. w_lam==-1_dl .and. wa_ppf==0._dl
-
-      final_z   = CP%endred
-      nsteps    = CP%numstepsODE
-
-
-      !allocating arrays
-      if (allocated(GP_z) .eqv. .false.) allocate (GP_z(nsteps))
-      if (allocated(GP_w) .eqv. .false.) allocate (GP_w(nsteps))
-      if (allocated(dd_GP_w) .eqv. .false.) allocate (dd_GP_w(nsteps))
-
-      nlbins=(CP%nb)-1
-
-      if (debugging) then
-         if ((CP%model.eq.ns).or.(CP%model.eq.ss)) then
-            write(*,*) 'num_bins=',CP%nb
-            do k=1,CP%nb
-               write(*,*) 'redshift',k,'=',CP%zb(k)
-               write(*,*) 'wde',k,'=',CP%wb(k)
-            end do
-         end if
-      end if
-
-
-
-      !Gaussian process interface
-      if ((CP%model.eq.GP).or.(CP%model.eq.baseline)) then
-
-         !Setting GP redshift to median redshift of each bin
-         gpreds(1) = CP%zb(1)/2
-         do i=2,CP%nb
-            gpreds(i) = (CP%zb(i)+CP%zb(i-1))/2.
-         end do
-
-
-
-         !Creating command line 
-  
-         !Generate tmp file name based on PID
-!         ipid = getpid()
-         write (feature_file(11:16), "(Z6.6)"), getpid()
-         !1. Prepare command and launch it!
-         write(z_ini, "(E15.7)"      ) initial_z
-         write(z_end, "(E15.7)"      ) final_z
-         write(steps_de, "(I10)"     ) nsteps
-         write(zbins, "(10E15.7)"   ) (gpreds(k),k=1,CP%nb)
-         write(wbins, "(10f15.7)"     ) (CP%wb(k)+1,k=1,CP%nb) !python parser struggles with scientific notation negatives: using floats here
-!         write(lencorr, "(10E15.7)"  ) CP%corrlen
-         write(lbins, "(10E15.7)"     ) (CP%lb(k),k=1,nlbins)
-
-
-         if (CP%model.eq.GP) then
-            if (debugging) write(*,*) 'WORKING WITH GP'
-            !here needs the call to script with no baseline
-            write(0,*) 'GP with no baseline not implemented yet'
-            stop
-
-
-         else if (CP%model.eq.baseline) then
-
-            if (debugging) write(*,*) 'WORKING WITH GP (with baseline)'
-	    
-
-            command_plus_arguments = "python GP.py --inired "//trim(adjustl(z_ini))//&
-	    &" --endred "//trim(adjustl(z_end))//" --ODEsteps "//trim(adjustl(steps_de))// & 
-            & " --redshifts "//trim(adjustl(zbins))// " --eos "//trim(adjustl(wbins))//&
-            & " --lb "//trim(adjustl(lbins))// " --outfile " // feature_file
-         
-
-            !calling script!!!
-            if (debugging) then 
-               write(*,*) 'Calling Gaussian process script with command line:'
-               write(*,*) trim(adjustl(command_plus_arguments))
-            end if
-            status = system(trim(adjustl(command_plus_arguments)))
-            if (status/=0) then
-               print *, "Failure in GP reconstruction of w(z) -- see above."
-               call abort
-            end if
-
-
-	 end if
-
-
-         !Reading temporary file generated by GP script--------------
-         open(unit=17, file=feature_file, action='read')
-         do i=1,nsteps
-            read(17, "(E15.8, 1X, E15.8)", iostat=status) GP_z(i), GP_w(i)
-            if (status>0) then
-               print *, "Error reading the tmp w(z) file."
-               call abort
-            end if
-         end do
-         close(17, status='delete')
-         !-----------------------------------------------------------
-
-         !Setting interpolation for GP arrays------------------------
-         call spline(GP_z,GP_w,nsteps,1d30,1d30,dd_GP_w)
-         !-----------------------------------------------------------
-     end if
-
-
-	if (printw) then
-                write(*,*) 'ciao'
-		open(40,file='printwde.dat')
-		do m=1,101
-			redshift=(m-1)*2._dl/100
-			write(40,*) redshift, w_de(1/(1+redshift))
-		end do
-		close(40)
-	end if
-
-
+    open(666,file='test.dat')
+    do i=1, 10000
+       red = (i-1)*2000._dl/10000._dl
+       write(666,*) red, w_de(1/(1+red)), grho_de(1/(1+red))
+    end do
+    close(666)
+    
+      
     end  subroutine init_background
 
 
     !Background evolution
     function dtauda(a)
+    use binnedw !MMmod: binned w
     !get d tau / d a
     use precision
     use ModelParams
@@ -447,10 +269,12 @@
 
     !  8*pi*G*rho*a**4.
     grhoa2=grhok*a2+(grhoc+grhob)*a+grhog+grhornomass
-    if (is_cosmological_constant) then
-        grhoa2=grhoa2+grhov*a2**2
+
+    !MMmod: binned w
+    if ((is_cosmological_constant).and.(CP%model.eq.0)) then
+       grhoa2=grhoa2+grhov*a2**2
     else
-        grhoa2=grhoa2+ grho_de(a)
+       grhoa2=grhoa2+ grho_de(a)
     end if
 
     if (CP%Num_Nu_massive /= 0) then
@@ -1617,6 +1441,9 @@
     !  8*pi*a*a*SUM[(rho_i+p_i)*v_i]
     dgq=grhob_t*vb
 
+    !MMmod: binned w
+    !WARNING: check if perturbations need to be modified
+!    if ((is_cosmological_constant).and.(CP%model.eq.0)) then
     if (is_cosmological_constant) then
         w_eff = -1_dl
         grhov_t=grhov*a2
@@ -2376,6 +2203,9 @@
     grhoc_t=grhoc/a
     grhor_t=grhornomass/a2
     grhog_t=grhog/a2
+    !MMmod: binned w
+    !WARNING: check if perturbations need to be modified
+!    if ((is_cosmological_constant).and.(CP%model.eq.0)) then
     if (is_cosmological_constant) then
         grhov_t=grhov*a2
         w_eff = -1_dl

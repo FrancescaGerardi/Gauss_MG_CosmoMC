@@ -240,12 +240,12 @@
     !MMmod: w_binned
     if (CP%model.gt.0) call calc_w_de(CP) 
 
-    open(666,file='test.dat')
-    do i=1, 10000
-       red = (i-1)*2000._dl/10000._dl
-       write(666,*) red, w_de(1/(1+red)), grho_de(1/(1+red))
-    end do
-    close(666)
+!    open(666,file='test.dat')
+!    do i=1, 10000
+!       red = (i-1)*2000._dl/10000._dl
+!       write(666,*) red, w_de(1/(1+red)), grho_de(1/(1+red))
+!    end do
+!    close(666)
     
       
     end  subroutine init_background

@@ -134,8 +134,8 @@
         real(dl)  :: s               !smoothing facto for tanh connection in binned functions
         real(dl)  :: zb(maxbins)             !right margin of redshift bins (first left margin is always zero)
         real(dl)  :: wb(maxbins)             !value of wb within each redshift bin
-!        real(dl)  :: corrlen                    !correlation lenght for gaussian process reconstruction
-	real(dl)  :: lb(maxbins-1)
+        real(dl)  :: corrlen                    !correlation lenght for gaussian process reconstruction
+
 
 
 

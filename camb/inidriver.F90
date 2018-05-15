@@ -142,13 +142,8 @@
     !reading specific parameters for different models
     if (P%model.eq.2) P%s= Ini_Read_Double('smooth_factor',10._dl)
 
-!    if ((P%model.eq.3).or.(P%model.eq.4)) P%corrlen = Ini_Read_Double('correlation_length',1._dl)
+    if ((P%model.eq.3).or.(P%model.eq.4)) P%corrlen = Ini_Read_Double('correlation_length',1._dl)
     
-    do i=1,P%nb-1
-       write(binnum,*) i
-       P%lb(i) = Ini_Read_Double('l_'//trim(adjustl(binnum)), 1._dl)
-
-    end do
     
     if (P%model.gt.4) then
        write(*,*) 'ONLY BINNED COUPLING AND GP IMPLEMENTED AT THE MOMENT'

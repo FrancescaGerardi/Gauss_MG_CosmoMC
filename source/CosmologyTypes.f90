@@ -121,8 +121,8 @@
         real(mcp) reserved(5)
 !BINNING PARAMETERS
 	real ::   binz1, binw1, binz2,  binw2, binz3, binw3, binz4, binw4
-!	real ::   corr_l
-	real ::   binl1, binl2, binl3
+	real ::   corr_l
+
 
 !ODE solvers details
 	integer :: smoothfactor,mode, numbins, endingz, ODEste

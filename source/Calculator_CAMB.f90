@@ -100,10 +100,8 @@
 	P%wb(3)=CMB%binw3 
 	P%zb(4)=CMB%binz4
 	P%wb(4)=CMB%binw4
-!	P%corrlen=CMB%corr_l
-	P%lb(1)=CMB%binl1
-	P%lb(2)=CMB%binl2
-	P%lb(3)=CMB%binl3
+	P%corrlen=CMB%corr_l
+
 
 !ODE solvers details
 	P%s=CMB%smoothfactor

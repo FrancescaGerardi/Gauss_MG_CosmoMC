@@ -22,9 +22,7 @@ binz3         z3
 binw3         w3
 binz4         z4
 binw4         w4
-binl1         l1
-binl2         l2
-binl3         l3
+corr_l        l
 smoothfactor  sf
 mode          model
 numbins       nb

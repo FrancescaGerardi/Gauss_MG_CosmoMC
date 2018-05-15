@@ -71,7 +71,7 @@
     call Names%AddDerivedRange('H0', this%H0_min, this%H0_max)
     this%num_derived = Names%num_derived
     !set number of hard parameters, number of initial power spectrum parameters
-    call this%SetTheoryParameterNumbers(32,last_power_index)
+    call this%SetTheoryParameterNumbers(30,last_power_index)
 
     end subroutine TP_Init
 
@@ -341,17 +341,14 @@
 	CMB%binw3=Params(22) 
 	CMB%binz4 = Params(23)
 	CMB%binw4= Params(24)
-!	CMB%corr_l = Params(23)
-	CMB%binl1= Params(25)
-	CMB%binl2= Params(26)
-	CMB%binl3= Params(27)
+	CMB%corr_l = Params(25)
 
 !ODE solvers details
-	CMB%smoothfactor=Params(28)
-	CMB%mode=Params(29)
-	CMB%numbins=Params(30)
-	CMB%endingz   = Params(31) 
-	CMB%ODEste   = Params(32)
+	CMB%smoothfactor=Params(26)
+	CMB%mode=Params(27)
+	CMB%numbins=Params(28)
+	CMB%endingz   = Params(29) 
+	CMB%ODEste   = Params(30)
 
 
 

@@ -279,17 +279,17 @@
     !  8*pi*G*rho*a**4.
     grhoa2=grhok*a2+(grhoc+grhob)*a+grhog+grhornomass
 
-    open(46,file='test_dtauda.dat', position='append')	
+!    open(46,file='test_dtauda.dat', position='append')	
     !MMmod: binned w
     if ((is_cosmological_constant).and.(CP%model.eq.0)) then
        grhoa2=grhoa2+grhov*a2**2
     else
-       if (z < 2._dl) then 
-             write(46,*) z, w_de(a), grho_de(a)
-       end if
+!       if (z < 2._dl) then 
+!             write(46,*) z, w_de(a), grho_de(a)
+!       end if
        grhoa2=grhoa2+ grho_de(a)	
     end if
-    close(46)
+!    close(46)
     if (CP%Num_Nu_massive /= 0) then
         !Get massive neutrino density relative to massless
         do nu_i = 1, CP%nu_mass_eigenstates

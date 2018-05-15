@@ -251,6 +251,7 @@
     end  subroutine init_background
 
 
+
     !Background evolution
     function dtauda(a)
     use binnedw !MMmod: binned w
@@ -260,23 +261,35 @@
     use MassiveNu
     use LambdaGeneral
     implicit none
-    real(dl) dtauda
+    real(dl) dtauda, z
     real(dl), intent(IN) :: a
     real(dl) rhonu,grhoa2, a2
     integer nu_i
+
+    real(dl), parameter   :: eps=1.e-12 !avoids 1/0
+
+    if (a.gt.0._dl) then
+        z = -1+1._dl/a
+    else
+        z = -1+1._dl/(a+eps)
+    end if
 
     a2=a**2
 
     !  8*pi*G*rho*a**4.
     grhoa2=grhok*a2+(grhoc+grhob)*a+grhog+grhornomass
 
+    open(46,file='test_dtauda.dat', position='append')	
     !MMmod: binned w
     if ((is_cosmological_constant).and.(CP%model.eq.0)) then
        grhoa2=grhoa2+grhov*a2**2
     else
-       grhoa2=grhoa2+ grho_de(a)
+       if (z < 2._dl) then 
+             write(46,*) z, w_de(a), grho_de(a)
+       end if
+       grhoa2=grhoa2+ grho_de(a)	
     end if
-
+    close(46)
     if (CP%Num_Nu_massive /= 0) then
         !Get massive neutrino density relative to massless
         do nu_i = 1, CP%nu_mass_eigenstates
@@ -284,11 +297,10 @@
             grhoa2=grhoa2+rhonu*grhormass(nu_i)
         end do
     end if
-
+    
     dtauda=sqrt(3/grhoa2)
 
     end function dtauda
-
     !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
     !Gauge-dependent perturbation equations

@@ -4,7 +4,7 @@ use constants
 use ModelParams
 
       implicit none
-      logical, parameter :: debugging = .false.
+      logical, parameter :: debugging = .true.
       real(dl), dimension(:),allocatable :: binned_z, binned_w, rhodeint !output arrays of GP reconstruction
       real(dl), dimension(:),allocatable :: b1, c1, d1                   !coefficients for interpolation
       real(dl), dimension(:),allocatable :: b2, c2, d2                   !coefficients for interpolation
@@ -270,7 +270,7 @@ use ModelParams
          end do
          close(40)
          close(42)
-         stop
+         !stop
      end if
 
      end subroutine calc_w_de

@@ -16,6 +16,12 @@ Alensf        A^f_L     #amplitude of smoothing power from fiducial models
 fdm           \epsilon_0 f_d    #CosmoRec dark matter annihilation parameter, 0910.3663
 binz1         z1            
 binw1	      w1
+binz2         z2
+binw2         w2
+binz3         z3
+binw3         w3
+binz4         z4
+binw4         w4
 corr_l        l
 smoothfactor  sf
 mode          model

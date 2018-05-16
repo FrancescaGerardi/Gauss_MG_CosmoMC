@@ -98,8 +98,8 @@ use ModelParams
          end do
  
          do i=1,numint-1
-            call get_wofz(CP, redint(i), wminus)
-            call get_wofz(CP, redint(i+1), wplus)
+            call get_wofz(CP, 1./(1+redint(i)), wminus)
+            call get_wofz(CP, 1./(1+redint(i+1)), wplus)
             integral = integral + 0.5*((1+wplus)/(1+redint(i+1))+(1+wminus)/(1+redint(i)))*(redint(i+1)-redint(i))!(binned_z(j)/(numint-1))
          end do
          rhodeint(j) = rhode0*exp(3._dl*integral)

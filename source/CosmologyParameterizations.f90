@@ -57,6 +57,7 @@
     call Ini%Read('sterile_mphys_max',this%sterile_mphys_max)
     !MMmod
     call Ini%Read('numbins',init_nbin)
+write(*,*) init_nbin
     prior => Ini%Read_String('H0_prior',NotFoundFail=.false.)
     if (prior/='') then
         read(prior,*) this%H0_prior_mean, this%H0_prior_std

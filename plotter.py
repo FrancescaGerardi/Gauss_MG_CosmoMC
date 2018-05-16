@@ -20,7 +20,7 @@ import planckStyle
 g = planckStyle.getSinglePlotter(chain_dir = './chains', ratio=1)
 
 
-roots = ['JLA+BAO_4bins_GP']#,'JLA+BAO_4bins_GP']
+roots = ['JLA+BAO_4bins_binned']#,'JLA+BAO_4bins_GP']
 params = ['omegam','binw1','binw2','binw3','binw4']
 colors = ['#8E001C','#FFB300']
 g.settings.solid_contour_palefactor = 0.8

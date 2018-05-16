@@ -81,12 +81,8 @@ use ModelParams
       rhode0=3._dl*((1000*CP%H0/c)**2.)*CP%omegav
 
       if ((CP%model.eq.theta_bin).or.(CP%model.eq.smooth_bin)) then
-                if (allocated(binned_z) .eqv. .false.) allocate (binned_z(nsteps), rhodeint(nsteps))
-
-                do i=1,numint
-                        binned_z(i)=(i-1)*(final_z)/(numint-1)
-                        call get_wofz(CP,binned_z(i),wtest)
-         !               write(777,*) binned_z(i), wtest
+                do i=1,nsteps
+                   binned_z(i)=(i-1)*(final_z)/(nsteps-1)
                 end do
       end if
 

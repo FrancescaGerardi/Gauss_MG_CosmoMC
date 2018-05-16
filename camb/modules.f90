@@ -132,8 +132,9 @@
         real(dl)  :: w                        !working only with constant for now (effectively 2 bins). TO BE CHANGED
         integer   :: nb                !number of redshift bins
         real(dl)  :: s               !smoothing facto for tanh connection in binned functions
-        real(dl)  :: zb(maxbins)             !right margin of redshift bins (first left margin is always zero)
-        real(dl)  :: wb(maxbins)             !value of wb within each redshift bin
+        !MMmod
+        real(dl), dimension(:), allocatable  :: zb             !right margin of redshift bins (first left margin is always zero)
+        real(dl), dimension(:), allocatable  :: wb             !value of wb within each redshift bin
         real(dl)  :: corrlen                    !correlation lenght for gaussian process reconstruction
 
 

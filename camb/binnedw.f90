@@ -24,6 +24,7 @@ use ModelParams
       real(dl)              :: z
       real(dl), intent(out) :: wde
       integer               :: i,j,k
+      real(dl), parameter   :: amin = 1.e-12
 
       real(dl), parameter   :: eps=1.e-12 !avoids 1/0
 
@@ -72,7 +73,7 @@ use ModelParams
 
       subroutine get_integral_rhode(CP)
       Type(CAMBparams) CP
-      real(dl)              :: wde, rhode0, integral, wplus, wminus
+      real(dl)              :: wde, rhode0, integral, wplus, wminus, wtest
       integer,parameter     :: numint=1000, numarr=1000
       real(dl), dimension(numint) :: redint
       integer               :: i,j,k
@@ -80,12 +81,13 @@ use ModelParams
       rhode0=3._dl*((1000*CP%H0/c)**2.)*CP%omegav
 
       if ((CP%model.eq.theta_bin).or.(CP%model.eq.smooth_bin)) then
-                if (allocated(binned_z) .eqv. .false.) allocate (binned_z(numint), rhodeint(nsteps))
+                if (allocated(binned_z) .eqv. .false.) allocate (binned_z(nsteps), rhodeint(nsteps))
 
                 do i=1,numint
                         binned_z(i)=(i-1)*(final_z)/(numint-1)
+                        call get_wofz(CP,binned_z(i),wtest)
+         !               write(777,*) binned_z(i), wtest
                 end do
-        
       end if
 
       do j=1, nsteps
@@ -98,9 +100,10 @@ use ModelParams
          do i=1,numint-1
             call get_wofz(CP, redint(i), wminus)
             call get_wofz(CP, redint(i+1), wplus)
-            integral = integral + 0.5*((1+wplus)/(1+redint(i+1))+(1+wminus)/(1+redint(i)))*(binned_z(j)/(numint-1))
+            integral = integral + 0.5*((1+wplus)/(1+redint(i+1))+(1+wminus)/(1+redint(i)))*(redint(i+1)-redint(i))!(binned_z(j)/(numint-1))
          end do
          rhodeint(j) = rhode0*exp(3._dl*integral)
+         !write(42,*) binned_z(j), rhodeint(j),rhode0!/(3*(rhodeint(j)+3._dl*((1000*CP%H0/c)**2.)*(1-CP%omegav)*(1+binned_z(j))**3.))
       end do
 
       call newspline(binned_z,rhodeint, b2, c2, d2, nsteps)
@@ -150,7 +153,6 @@ use ModelParams
 
       final_z   = CP%endred
       nsteps    = CP%numstepsODE
-
       !allocating arrays
       if (allocated(binned_z) .eqv. .false.) allocate (binned_z(nsteps),binned_w(nsteps), rhodeint(nsteps))
       if (allocated(b1) .eqv. .false.) allocate (b1(nsteps), c1(nsteps), d1(nsteps))
@@ -248,11 +250,11 @@ use ModelParams
          stop
      end if
 
-     write(*,*) 'w(z) computed'
+     if (debugging) write(*,*) 'w(z) computed'
 
      call get_integral_rhode(CP)
 
-     write(*,*) 'done rho_de integral'
+     if (debugging) write(*,*) 'done rho_de integral'
 
      if (debugging) then
          write(*,*) 'printing w(z)'
@@ -269,7 +271,7 @@ use ModelParams
          end do
          close(40)
          close(42)
-         !stop
+         stop
      end if
 
      end subroutine calc_w_de

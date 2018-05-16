@@ -1225,6 +1225,9 @@
         jla_LnLike=JLA_alpha_beta_like(alpha, beta, lumdists)
     end if
 
+!MMmod
+write(*,*) 'jla_lnlike=',jla_LnLike
+
     END FUNCTION jla_LnLike
 
     END MODULE JLA

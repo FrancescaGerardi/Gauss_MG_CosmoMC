@@ -16,6 +16,9 @@
     implicit none
     private
 
+    !MMmod
+    integer :: init_nbin
+
     Type, extends(TCosmologyParameterization) :: ThetaParameterization
         real(mcp) :: H0_min = 40, H0_max = 100
         real(mcp) :: H0_prior_mean = 0._mcp, H0_prior_std = 0._mcp
@@ -52,6 +55,8 @@
     call Ini%Read('H0_max',this%H0_max)
     call Ini%Read('use_min_zre',this%use_min_zre)
     call Ini%Read('sterile_mphys_max',this%sterile_mphys_max)
+    !MMmod
+    call Ini%Read('numbins',init_nbin)
     prior => Ini%Read_String('H0_prior',NotFoundFail=.false.)
     if (prior/='') then
         read(prior,*) this%H0_prior_mean, this%H0_prior_std
@@ -71,7 +76,9 @@
     call Names%AddDerivedRange('H0', this%H0_min, this%H0_max)
     this%num_derived = Names%num_derived
     !set number of hard parameters, number of initial power spectrum parameters
-    call this%SetTheoryParameterNumbers(32,last_power_index)
+
+    !MMmod
+    call this%SetTheoryParameterNumbers(16+2*init_nbin+5,last_power_index)
 
     end subroutine TP_Init
 
@@ -129,44 +136,26 @@
             call this%TCosmologyParameterization%ParamArrayToTheoryParams(Params, CMB)
 
             error = 0   !JD to prevent stops when using bbn_consistency or m_sterile
-            DA = Params(3)/100
-            try_b = this%H0_min
+            !MMmod: switching to H0 as primary parameter instead of theta
+!            DA = Params(3)/100
+            try_b = this%H0_max
             call SetForH(Params,CMB,try_b, .true.,error)  !JD for bbn related errors
             if(error/=0)then
                 cmb%H0=0
                 return
             end if
-            D_b = CosmoCalc%CMBToTheta(CMB)
-            try_t = this%H0_max
-            call SetForH(Params,CMB,try_t, .false.)
-            D_t = CosmoCalc%CMBToTheta(CMB)
-            if (DA < D_b .or. DA > D_t) then
-                if (Feedback>1) write(*,*) instance, 'Out of range finding H0: ', real(Params(3))
-                cmb%H0=0 !Reject it
+            !!call InitCAMB(CMB,error)
+            if (CMB%tau==0._mcp) then
+               CMB%zre=0
             else
-                lasttry = -1
-                do
-                    call SetForH(Params,CMB,(try_b+try_t)/2, .false.)
-                    D_try = CosmoCalc%CMBToTheta(CMB)
-                    if (D_try < DA) then
-                        try_b = (try_b+try_t)/2
-                    else
-                        try_t = (try_b+try_t)/2
-                    end if
-                    if (abs(D_try - lasttry)< 1e-7) exit
-                    lasttry = D_try
-                end do
-
-                !!call InitCAMB(CMB,error)
-                if (CMB%tau==0._mcp) then
-                    CMB%zre=0
-                else
-                    CMB%zre = CosmoCalc%GetZreFromTau(CMB, CMB%tau)
-                end if
-
-                LastCMB(cache) = CMB
-                cache = mod(cache,ncache)+1
+               CMB%zre = CosmoCalc%GetZreFromTau(CMB, CMB%tau)
             end if
+
+
+            !MMmod: computing theta as derived, will be passed to derived(1) in place of H0
+            CMB%thetaCMB = CosmoCalc%CMBToTheta(CMB)*100
+            LastCMB(cache) = CMB
+            cache = mod(cache,ncache)+1
         end select
         class default
         call MpiStop('CosmologyParameterizations: Calculator is not TCosmologyCalculator')
@@ -204,8 +193,8 @@
         allocate(Derived(this%num_derived), source=0._mcp)
 
         call this%ParamArrayToTheoryParams(P,CMB)
-
-        derived(1) = CMB%H0
+        !MMmod: gets theta as derived instead of H0
+        derived(1) = CMB%thetaCMB!CMB%H0
         derived(2) = CMB%omv
         derived(3) = CMB%omdm+CMB%omb
         derived(4) = CMB%omdmh2 + CMB%ombh2
@@ -281,16 +270,18 @@
     end subroutine SetFast
 
     subroutine SetForH(Params,CMB,H0, firsttime,error)
+    !MMmod: it now read H0 instead of theta
     use bbn
     real(mcp) Params(num_Params)
     logical, intent(in) :: firsttime
     Type(CMBParams) CMB
     real(mcp) h2,H0
     integer, optional :: error
+    integer :: i,j
 
-    CMB%H0=H0
     if (firsttime) then
         CMB%reserved = 0
+        CMB%H0 = Params(3) !MMmod
         CMB%ombh2 = Params(1)
         CMB%tau = params(4) !tau, set zre later
         CMB%Omk = Params(5)
@@ -333,26 +324,23 @@
 
 
 !BINNING PARAMETERS
-	CMB%binz1=Params(17)
-	CMB%binw1=Params(18) 
-	CMB%binz2=Params(19)
-	CMB%binw2=Params(20)
-	CMB%binz3=Params(21)
-	CMB%binw3=Params(22) 
-	CMB%binz4 = Params(23)
-	CMB%binw4= Params(24)
-!	CMB%corr_l = Params(23)
-	CMB%binl1= Params(25)
-	CMB%binl2= Params(26)
-	CMB%binl3= Params(27)
+!MMmod
+        CMB%numbins = init_nbin
+        if (.not.allocated(CMB%binz)) allocate(CMB%binz(CMB%numbins),CMB%binw(CMB%numbins)) 
+        j=1
+        do i=1,CMB%numbins
+           CMB%binz(i) = Params(16+j)
+           CMB%binw(i) = Params(16+j+1)
+           j = j+2
+        end do
+       j = j-1
+	CMB%corr_l = Params(16+j+1)
 
 !ODE solvers details
-	CMB%smoothfactor=Params(28)
-	CMB%mode=Params(29)
-	CMB%numbins=Params(30)
-	CMB%endingz   = Params(31) 
-	CMB%ODEste   = Params(32)
-
+	CMB%smoothfactor= Params(16+j+2)
+	CMB%mode        = Params(16+j+3)
+	CMB%endingz     = Params(16+j+4) 
+	CMB%ODEste      = Params(16+j+5)
 
 
 

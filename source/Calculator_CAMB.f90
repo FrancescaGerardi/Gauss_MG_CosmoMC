@@ -85,32 +85,27 @@
     type(CAMBParams)  P
     real(dl) neff_massive_standard, mnu, m1, m3, normal_frac
     real(dl), external :: Newton_raphson
-
+    integer i
 
 
     P = this%CAMBP
 
 
 !BINNING PARAMETERS
-	P%zb(1)=CMB%binz1
-	P%wb(1)=CMB%binw1
-	P%zb(2)=CMB%binz2
-	P%wb(2)=CMB%binw2
-	P%zb(3)=CMB%binz3
-	P%wb(3)=CMB%binw3 
-	P%zb(4)=CMB%binz4
-	P%wb(4)=CMB%binw4
-!	P%corrlen=CMB%corr_l
-	P%lb(1)=CMB%binl1
-	P%lb(2)=CMB%binl2
-	P%lb(3)=CMB%binl3
+    !MMmod
+    P%nb=CMB%numbins
+    if (.not.allocated(P%zb)) allocate(P%zb(P%nb),P%wb(P%nb))
+    do i=1,P%nb
+       P%zb(i) = CMB%binz(i)
+       P%wb(i) = CMB%binw(i)
+    end do
+    P%corrlen=CMB%corr_l
 
 !ODE solvers details
-	P%s=CMB%smoothfactor
-	P%model=CMB%mode
-	P%nb=CMB%numbins
-	P%endred=CMB%endingz 
-	P%numstepsODE=CMB%ODEste 
+    P%s=CMB%smoothfactor
+    P%model=CMB%mode
+    P%endred=CMB%endingz 
+    P%numstepsODE=CMB%ODEste 
 
 
 
